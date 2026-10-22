@@ -1,122 +1,188 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useRef, useState } from "react";
+import TestSearch from "./components/TestSearch";
+import SelectedTests from "./components/SelectedTests";
+import PlanResult from "./components/PlanResult";
+import { ApiRequestError, fetchPlan, fetchTests } from "./api";
+import type { LabTest, PlanResult as Plan } from "./types";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+function readableError(error: unknown): string {
+  if (error instanceof ApiRequestError) {
+    switch (error.code) {
+      case "INVALID_TESTS":
+        return error.testIds.length
+          ? `Some selected tests are unknown or unavailable: ${error.testIds.join(", ")}. Please review your selection.`
+          : "Some selected tests are invalid. Please refresh and try again.";
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      case "NOT_AVAILABLE":
+        return error.testIds.length
+          ? `These tests cannot currently be obtained: ${error.testIds.join(", ")}.`
+          : "No available package or individual test combination can cover your selection.";
 
-      <div className="ticks"></div>
+      case "EMPTY_SELECTION":
+        return "Please select at least one lab test.";
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      default:
+        return "The server couldn't calculate your plan. Please try again.";
+    }
+  }
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  return "Unable to connect to the server. Check that the backend is running and try again.";
 }
 
-export default App
+export default function App() {
+  const [tests, setTests] = useState<LabTest[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [loadingTests, setLoadingTests] = useState(true);
+  const [loadingPlan, setLoadingPlan] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [planError, setPlanError] = useState<string | null>(null);
+
+  const requestSequence = useRef(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchTests(controller.signal)
+      .then((data) => {
+        setTests(data);
+        setCatalogError(null);
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setCatalogError(readableError(error));
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoadingTests(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const sequence = ++requestSequence.current;
+    const controller = new AbortController();
+
+    if (selectedIds.length === 0) {
+      setPlan(null);
+      setPlanError(null);
+      setLoadingPlan(false);
+      return () => controller.abort();
+    }
+
+    setPlan(null);
+    setPlanError(null);
+    setLoadingPlan(true);
+
+    fetchPlan(selectedIds, controller.signal)
+      .then((result) => {
+        if (sequence !== requestSequence.current) return;
+        setPlan(result);
+      })
+      .catch((error: unknown) => {
+        if (
+          controller.signal.aborted ||
+          sequence !== requestSequence.current
+        ) {
+          return;
+        }
+
+        setPlan(null);
+        setPlanError(readableError(error));
+      })
+      .finally(() => {
+        if (
+          !controller.signal.aborted &&
+          sequence === requestSequence.current
+        ) {
+          setLoadingPlan(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [selectedIds]);
+
+  function addTest(id: string) {
+    setSelectedIds((current) =>
+      current.includes(id) ? current : [...current, id],
+    );
+  }
+
+  function removeTest(id: string) {
+    setSelectedIds((current) => current.filter((item) => item !== id));
+  }
+
+  if (loadingTests) {
+    return (
+      <main className="app-shell">
+        <p className="status-message">Loading available lab tests…</p>
+      </main>
+    );
+  }
+
+  if (catalogError) {
+    return (
+      <main className="app-shell">
+        <div className="error-message" role="alert">
+          <h1>Lab Test Bundle Finder</h1>
+          <p>{catalogError}</p>
+          <button
+            className="button"
+            onClick={() => window.location.reload()}
+          >
+            Try again
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="app-shell">
+      <header className="hero">
+        <p className="eyebrow">MEDEX HEALTHCARE</p>
+        <h1>Lab Test Bundle Finder</h1>
+        <p>
+          Choose the tests your doctor recommended. We'll find
+          the lowest-cost combination of packages and individual
+          tests for you.
+        </p>
+      </header>
+
+      <div className="layout">
+        <div className="selection-column">
+          <TestSearch
+            tests={tests}
+            selectedIds={selectedIds}
+            onAdd={addTest}
+          />
+
+          <SelectedTests
+            tests={tests}
+            selectedIds={selectedIds}
+            onRemove={removeTest}
+          />
+        </div>
+
+        <div className="result-column">
+          <PlanResult
+            plan={plan}
+            tests={tests}
+            loading={loadingPlan}
+            error={planError}
+            selectedCount={selectedIds.length}
+          />
+        </div>
+      </div>
+
+      <footer>
+        Prices are shown in Thai baht (฿). Confirm test
+        availability with your chosen laboratory before booking.
+      </footer>
+    </main>
+  );
+}
