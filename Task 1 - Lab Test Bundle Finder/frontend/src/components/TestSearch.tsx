@@ -55,7 +55,7 @@ export default function TestSearch({
                 {test.code} ·{" "}
                 {test.price === null
                   ? "Package only"
-                  : `$${test.price.toLocaleString()}`}
+                  : `฿${test.price.toLocaleString("en-US")}`}
               </span>
             </div>
 

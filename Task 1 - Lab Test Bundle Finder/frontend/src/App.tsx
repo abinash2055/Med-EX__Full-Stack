@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import TestSearch from "./components/TestSearch";
 import SelectedTests from "./components/SelectedTests";
@@ -11,13 +12,13 @@ function readableError(error: unknown): string {
     switch (error.code) {
       case "INVALID_TESTS":
         return error.testIds.length
-          ? `Some selected tests are unknown or unavailable: ${error.testIds.join(", ")}. Please review your selection.`
+          ? `Some selected tests are invalid or unavailable: ${error.testIds.join(", ")}.`
           : "Some selected tests are invalid. Please refresh and try again.";
 
       case "NOT_AVAILABLE":
         return error.testIds.length
           ? `These tests cannot currently be obtained: ${error.testIds.join(", ")}.`
-          : "No available package or individual test combination can cover your selection.";
+          : "No available combination of packages and individual tests covers your selection.";
 
       case "EMPTY_SELECTION":
         return "Please select at least one lab test.";
@@ -27,7 +28,7 @@ function readableError(error: unknown): string {
     }
   }
 
-  return "Unable to connect to the server. Check that the backend is running and try again.";
+  return "Unable to connect to the server. Please check that the backend is running.";
 }
 
 export default function App() {
@@ -71,6 +72,7 @@ export default function App() {
       setPlan(null);
       setPlanError(null);
       setLoadingPlan(false);
+
       return () => controller.abort();
     }
 
@@ -113,13 +115,19 @@ export default function App() {
   }
 
   function removeTest(id: string) {
-    setSelectedIds((current) => current.filter((item) => item !== id));
+    setSelectedIds((current) =>
+      current.filter((item) => item !== id),
+    );
   }
 
   if (loadingTests) {
     return (
       <main className="app-shell">
-        <p className="status-message">Loading available lab tests…</p>
+        <div className="loading-screen" role="status">
+          <div className="loading-icon">M</div>
+          <h1>MedEx</h1>
+          <p className="muted">Loading available lab tests...</p>
+        </div>
       </main>
     );
   }
@@ -127,16 +135,18 @@ export default function App() {
   if (catalogError) {
     return (
       <main className="app-shell">
-        <div className="error-message" role="alert">
+        <section className="error-message" role="alert">
+          <p className="eyebrow">MEDEX HEALTHCARE</p>
           <h1>Lab Test Bundle Finder</h1>
           <p>{catalogError}</p>
           <button
+            type="button"
             className="button"
             onClick={() => window.location.reload()}
           >
             Try again
           </button>
-        </div>
+        </section>
       </main>
     );
   }
@@ -144,14 +154,60 @@ export default function App() {
   return (
     <main className="app-shell">
       <header className="hero">
-        <p className="eyebrow">MEDEX HEALTHCARE</p>
-        <h1>Lab Test Bundle Finder</h1>
-        <p>
-          Choose the tests your doctor recommended. We'll find
-          the lowest-cost combination of packages and individual
-          tests for you.
-        </p>
+        <div className="hero-content">
+          <div className="brand-label">
+            <span className="brand-icon">M</span>
+            <span>MEDEX HEALTHCARE</span>
+          </div>
+
+          <p className="hero-tag">SMARTER HEALTHCARE, BETTER VALUE</p>
+
+          <h1>
+            Find the right tests.
+            <br />
+            <span>Pay less for healthcare.</span>
+          </h1>
+
+          <p className="hero-description">
+            Select the lab tests you need and discover the most
+            affordable combination of packages and individual tests.
+          </p>
+
+          <div className="hero-highlights">
+            <span>
+              <span className="highlight-check">✓</span>
+              Smart price comparison
+            </span>
+            <span>
+              <span className="highlight-check">✓</span>
+              Automatic savings calculation
+            </span>
+          </div>
+        </div>
+
+        <div className="hero-decoration" aria-hidden="true">
+          <div className="medical-symbol">+</div>
+          <div className="decoration-circle circle-one" />
+          <div className="decoration-circle circle-two" />
+        </div>
       </header>
+
+      <section className="workflow-intro">
+        <div>
+          <p className="section-eyebrow">YOUR HEALTHCARE PLANNER</p>
+          <h2>Plan your lab tests in 3 simple steps</h2>
+          <p>
+            Choose your tests, review your selection, and find your
+            cheapest available plan.
+          </p>
+        </div>
+
+        <div className="selection-indicator">
+          <span className="indicator-dot" />
+          {selectedIds.length}{" "}
+          {selectedIds.length === 1 ? "test" : "tests"} selected
+        </div>
+      </section>
 
       <div className="layout">
         <div className="selection-column">
@@ -179,9 +235,20 @@ export default function App() {
         </div>
       </div>
 
-      <footer>
-        Prices are shown in Thai baht (฿). Confirm test
-        availability with your chosen laboratory before booking.
+      <footer className="app-footer">
+        <div className="footer-brand">
+          <span className="footer-brand-icon">M</span>
+          <span>MedEx Healthcare</span>
+        </div>
+
+        <p>
+          Prices are shown in Thai baht (฿). Confirm test availability
+          with your chosen laboratory before booking.
+        </p>
+
+        <span className="footer-caption">
+          Your health. Your choice. Better value.
+        </span>
       </footer>
     </main>
   );
