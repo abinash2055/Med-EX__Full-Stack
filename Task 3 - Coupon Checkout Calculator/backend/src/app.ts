@@ -52,7 +52,9 @@ app.post("/api/orders", (req, res) => {
     );
 
     if (validationError) {
-      return res.status(400).json({ error: validationError });
+      return res.status(400).json({
+        error: validationError
+      });
     }
 
     // Capture the quote before acquiring the write transaction.

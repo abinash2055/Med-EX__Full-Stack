@@ -235,20 +235,22 @@ function App() {
         </p>
       </section>
 
-      {error && (
-        <div className="notice error" role="alert">
-          <strong>Attention</strong>
-          <p>{error}</p>
-        </div>
-      )}
+      {
+        error && (
+          <div className="notice error" role="alert">
+            <strong>Attention</strong>
+            <p>{error}</p>
+          </div>
+        )}
 
-      {success && (
-        <div className="notice success" role="status">
-          <strong>Order confirmed!</strong>
-          <p>{success}</p>
-          <p>Order reference: {orderId}</p>
-        </div>
-      )}
+      {
+        success && (
+          <div className="notice success" role="status">
+            <strong>Order confirmed!</strong>
+            <p>{success}</p>
+            <p>Order reference: {orderId}</p>
+          </div>
+        )}
 
       <div className="layout">
         <section className="panel services-panel">
@@ -260,42 +262,44 @@ function App() {
             <span className="count">{services.length} services</span>
           </div>
 
-          {loadingServices ? (
-            <p className="muted">Loading services...</p>
-          ) : services.length === 0 ? (
-            <p className="muted">No services are available.</p>
-          ) : (
-            <div className="service-list">
-              {services.map((service) => {
-                const quantity =
-                  cart.find((line) => line.serviceId === service.id)
-                    ?.quantity ?? 0;
+          {
+            loadingServices ? (
+              <p className="muted">Loading services...</p>
+            ) : services.length === 0 ? (
+              <p className="muted">No services are available.</p>
+            ) : (
+              <div className="service-list">
+                {
+                  services.map((service) => {
+                    const quantity =
+                      cart.find((line) => line.serviceId === service.id)
+                        ?.quantity ?? 0;
 
-                return (
-                  <article className="service-card" key={service.id}>
-                    <div className="service-info">
-                      <span className="service-type">
-                        {service.type.replace("_", " ")}
-                      </span>
-                      <h3>{service.title}</h3>
-                      <p>{service.providerName}</p>
-                      <strong className="service-price">
-                        {money(service.price)}
-                      </strong>
-                    </div>
+                    return (
+                      <article className="service-card" key={service.id}>
+                        <div className="service-info">
+                          <span className="service-type">
+                            {service.type.replace("_", " ")}
+                          </span>
+                          <h3>{service.title}</h3>
+                          <p>{service.providerName}</p>
+                          <strong className="service-price">
+                            {money(service.price)}
+                          </strong>
+                        </div>
 
-                    <button
-                      className="add-button"
-                      onClick={() => addService(service.id)}
-                      disabled={quantity >= 20}
-                    >
-                      {quantity ? `Add more (${quantity})` : "Add"}
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-          )}
+                        <button
+                          className="add-button"
+                          onClick={() => addService(service.id)}
+                          disabled={quantity >= 20}
+                        >
+                          {quantity ? `Add more (${quantity})` : "Add"}
+                        </button>
+                      </article>
+                    );
+                  })}
+              </div>
+            )}
         </section>
 
         <aside className="panel checkout-panel">
@@ -328,93 +332,97 @@ function App() {
           </select>
 
           <div className="cart-list">
-            {cart.length === 0 ? (
-              <div className="empty-cart">
-                <span className="empty-icon">♡</span>
-                <h3>Your cart is empty</h3>
-                <p>Add a service to get started.</p>
-              </div>
-            ) : (
-              cart.map((line) => {
-                const service = serviceMap.get(line.serviceId);
-                if (!service) return null;
+            {
+              cart.length === 0 ? (
+                <div className="empty-cart">
+                  <span className="empty-icon">♡</span>
+                  <h3>Your cart is empty</h3>
+                  <p>Add a service to get started.</p>
+                </div>
+              ) : (
+                cart.map((line) => {
+                  const service = serviceMap.get(line.serviceId);
+                  if (!service) return null;
 
-                const quoteLine = quote?.lines.find(
-                  (item) => item.serviceId === line.serviceId
-                );
+                  const quoteLine = quote?.lines.find(
+                    (item) => item.serviceId === line.serviceId
+                  );
 
-                return (
-                  <article className="cart-item" key={line.serviceId}>
-                    <div className="cart-item-heading">
-                      <div>
-                        <h3>{service.title}</h3>
-                        <p>{money(service.price)} each</p>
-                      </div>
-                      <button
-                        className="remove-button"
-                        onClick={() => removeService(line.serviceId)}
-                        aria-label={`Remove ${service.title}`}
-                      >
-                        Remove
-                      </button>
-                    </div>
-
-                    <div className="quantity-row">
-                      <div className="quantity-control">
+                  return (
+                    <article className="cart-item" key={line.serviceId}>
+                      <div className="cart-item-heading">
+                        <div>
+                          <h3>{service.title}</h3>
+                          <p>{money(service.price)} each</p>
+                        </div>
                         <button
-                          onClick={() =>
-                            updateQuantity(
-                              line.serviceId,
-                              line.quantity - 1
-                            )
-                          }
-                          aria-label="Decrease quantity"
+                          className="remove-button"
+                          onClick={() => removeService(line.serviceId)}
+                          aria-label={`Remove ${service.title}`}
                         >
-                          −
-                        </button>
-                        <span>{line.quantity}</span>
-                        <button
-                          onClick={() =>
-                            updateQuantity(
-                              line.serviceId,
-                              line.quantity + 1
-                            )
-                          }
-                          disabled={line.quantity >= 20}
-                          aria-label="Increase quantity"
-                        >
-                          +
+                          Remove
                         </button>
                       </div>
 
-                      <strong>
-                        {money(quoteLine?.amount ??
-                          String(Number(service.price) * line.quantity))}
-                      </strong>
-                    </div>
+                      <div className="quantity-row">
+                        <div className="quantity-control">
+                          <button
+                            onClick={() =>
+                              updateQuantity(
+                                line.serviceId,
+                                line.quantity - 1
+                              )
+                            }
+                            aria-label="Decrease quantity"
+                          >
+                            −
+                          </button>
+                          <span>{line.quantity}</span>
+                          <button
+                            onClick={() =>
+                              updateQuantity(
+                                line.serviceId,
+                                line.quantity + 1
+                              )
+                            }
+                            disabled={line.quantity >= 20}
+                            aria-label="Increase quantity"
+                          >
+                            +
+                          </button>
+                        </div>
 
-                    {quoteLine &&
-                      Object.entries(quoteLine.discounts).map(
-                        ([code, amount]) => (
-                          <div className="discount-row" key={code}>
-                            <span>{code} discount</span>
-                            <span>−{money(amount)}</span>
-                          </div>
-                        )
-                      )}
-
-                    {quoteLine && (
-                      <div className="after-discount">
-                        <span>After discounts</span>
                         <strong>
-                          {money(quoteLine.amountAfterDiscounts)}
+                          {
+                            money(quoteLine?.amount ??
+                              String(Number(service.price) * line.quantity))}
                         </strong>
                       </div>
-                    )}
-                  </article>
-                );
-              })
-            )}
+
+                      {
+                        quoteLine &&
+                        Object.entries(quoteLine.discounts).map(
+                          ([code, amount]) => (
+                            <div className="discount-row" key={code}>
+                              <span>{code} discount</span>
+                              <span>−{money(amount)}</span>
+                            </div>
+                          )
+                        )}
+
+                      {
+                        quoteLine && (
+                          <div className="after-discount">
+                            <span>After discounts</span>
+                            <strong>
+                              {money(quoteLine.amountAfterDiscounts)}
+                            </strong>
+                          </div>
+                        )}
+                    </article>
+                  );
+                })
+              )}
           </div>
 
           <div className="coupon-section">
@@ -443,43 +451,45 @@ function App() {
               </button>
             </form>
 
-            {couponCodes.length > 0 && (
-              <div className="coupon-chips">
-                {couponCodes.map((code) => {
-                  const result = quote?.coupons.find(
-                    (coupon) => coupon.code === code
-                  );
+            {
+              couponCodes.length > 0 && (
+                <div className="coupon-chips">
+                  {couponCodes.map((code) => {
+                    const result = quote?.coupons.find(
+                      (coupon) => coupon.code === code
+                    );
 
-                  return (
-                    <div className="coupon-result" key={code}>
-                      <div className="coupon-chip">
-                        <span>{code}</span>
-                        <button
-                          onClick={() => removeCoupon(code)}
-                          aria-label={`Remove ${code}`}
-                        >
-                          ×
-                        </button>
+                    return (
+                      <div className="coupon-result" key={code}>
+                        <div className="coupon-chip">
+                          <span>{code}</span>
+                          <button
+                            onClick={() => removeCoupon(code)}
+                            aria-label={`Remove ${code}`}
+                          >
+                            ×
+                          </button>
+                        </div>
+
+                        {
+                          result && (
+                            <p
+                              className={
+                                result.status === "applied"
+                                  ? "coupon-applied"
+                                  : "coupon-rejected"
+                              }
+                            >
+                              {result.status === "applied"
+                                ? `Applied: −${money(result.discount)}`
+                                : result.reason}
+                            </p>
+                          )}
                       </div>
-
-                      {result && (
-                        <p
-                          className={
-                            result.status === "applied"
-                              ? "coupon-applied"
-                              : "coupon-rejected"
-                          }
-                        >
-                          {result.status === "applied"
-                            ? `Applied: −${money(result.discount)}`
-                            : result.reason}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
           </div>
 
           <div className="totals">
@@ -505,11 +515,12 @@ function App() {
             </div>
           </div>
 
-          {quoting && (
-            <p className="muted loading-text">
-              Updating your quote...
-            </p>
-          )}
+          {
+            quoting && (
+              <p className="muted loading-text">
+                Updating your quote...
+              </p>
+            )}
 
           <button
             className="checkout-button"
@@ -521,11 +532,12 @@ function App() {
               placingOrder
             }
           >
-            {placingOrder
-              ? "Processing..."
-              : confirmUpdatedTotal
-                ? "Confirm updated total"
-                : "Place order"}
+            {
+              placingOrder
+                ? "Processing..."
+                : confirmUpdatedTotal
+                  ? "Confirm updated total"
+                  : "Place order"}
           </button>
 
           <p className="fine-print">
