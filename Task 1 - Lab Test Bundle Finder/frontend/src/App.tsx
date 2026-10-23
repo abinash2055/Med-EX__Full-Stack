@@ -1,10 +1,20 @@
-
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import TestSearch from "./components/TestSearch";
 import SelectedTests from "./components/SelectedTests";
 import PlanResult from "./components/PlanResult";
-import { ApiRequestError, fetchPlan, fetchTests } from "./api";
-import type { LabTest, PlanResult as Plan } from "./types";
+import {
+  ApiRequestError,
+  fetchPlan,
+  fetchTests
+} from "./api";
+import type {
+  LabTest,
+  PlanResult as Plan
+} from "./types";
 import "./App.css";
 
 function readableError(error: unknown): string {

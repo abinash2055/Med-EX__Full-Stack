@@ -1,5 +1,8 @@
-
-import { useCallback, useEffect, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useState
+} from 'react';
 import { api } from '../api';
 import type { QueueResponse } from '../types';
 
@@ -51,7 +54,7 @@ export default function Reception() {
     }
 
     if (age.trim() === '' || !Number.isFinite(numericAge) ||
-        numericAge < 0 || numericAge > 120) {
+      numericAge < 0 || numericAge > 120) {
       setError('Age must be between 0 and 120.');
       return;
     }
@@ -117,8 +120,12 @@ export default function Reception() {
         <form className="panel checkin-form" onSubmit={handleSubmit}>
           <h2>Patient check-in</h2>
 
-          {error && <div className="alert alert-error" role="alert">{error}</div>}
-          {success && <div className="alert alert-success" role="status">{success}</div>}
+          {
+            error && <div className="alert alert-error" role="alert">{error}
+            </div>}
+          {
+            success && <div className="alert alert-success" role="status">{success}
+            </div>}
 
           <label htmlFor="patient-name">Patient name</label>
           <input
@@ -155,21 +162,22 @@ export default function Reception() {
             <option value="appointment">Appointment</option>
           </select>
 
-          {kind === 'appointment' && (
-            <>
-              <label htmlFor="appointment-time">Appointment date and time</label>
-              <input
-                id="appointment-time"
-                type="datetime-local"
-                value={appointmentTime}
-                onChange={(event) => setAppointmentTime(event.target.value)}
-                required
-              />
-              <p className="field-hint">
-                Appointments more than 15 minutes late are treated as walk-ins.
-              </p>
-            </>
-          )}
+          {
+            kind === 'appointment' && (
+              <>
+                <label htmlFor="appointment-time">Appointment date and time</label>
+                <input
+                  id="appointment-time"
+                  type="datetime-local"
+                  value={appointmentTime}
+                  onChange={(event) => setAppointmentTime(event.target.value)}
+                  required
+                />
+                <p className="field-hint">
+                  Appointments more than 15 minutes late are treated as walk-ins.
+                </p>
+              </>
+            )}
 
           <label className="checkbox-label">
             <input
@@ -194,59 +202,65 @@ export default function Reception() {
             <span className="count-badge">{queue?.waiting.length ?? '—'} waiting</span>
           </div>
 
-          {loading && !queue ? (
-            <p className="state-message">Loading queue…</p>
-          ) : error && !queue ? (
-            <p className="state-message">Queue unavailable. Check your server connection.</p>
-          ) : !queue ? (
-            <p className="state-message">No queue data available.</p>
-          ) : queue.waiting.length === 0 ? (
-            <p className="state-message">No patients are waiting.</p>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Position</th>
-                    <th>Token</th>
-                    <th>Patient</th>
-                    <th>Wait estimate</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {queue.waiting.map((patient) => (
-                    <tr key={patient.token}>
-                      <td>{patient.position + 1}</td>
-                      <td><span className="token">{patient.token}</span></td>
-                      <td>{patient.name}</td>
-                      <td>
-                        {patient.estimatedWaitMinutes === 0
-                          ? 'Next'
-                          : `~${patient.estimatedWaitMinutes} min`}
-                      </td>
+          {
+            loading && !queue ? (
+              <p className="state-message">Loading queue…</p>
+            ) : error && !queue ? (
+              <p className="state-message">Queue unavailable. Check your server connection.</p>
+            ) : !queue ? (
+              <p className="state-message">No queue data available.</p>
+            ) : queue.waiting.length === 0 ? (
+              <p className="state-message">No patients are waiting.</p>
+            ) : (
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Position</th>
+                      <th>Token</th>
+                      <th>Patient</th>
+                      <th>Wait estimate</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {
+                      queue.waiting.map((patient) => (
+                        <tr key={patient.token}>
+                          <td>{patient.position + 1}</td>
+                          <td><span className="token">
+                            {patient.token}
+                          </span></td>
+                          <td>{patient.name}</td>
+                          <td>
+                            {patient.estimatedWaitMinutes === 0
+                              ? 'Next'
+                              : `~${patient.estimatedWaitMinutes} min`}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-          {queue && (
-            <div className="serving-summary">
-              <h3>Now serving</h3>
-              {queue.nowServing.length === 0 ? (
-                <p className="muted">No doctor is currently seeing a patient.</p>
-              ) : (
-                queue.nowServing.map((patient) => (
-                  <div className="serving-row" key={patient.doctorId}>
-                    <span>{patient.doctorId}</span>
-                    <strong>{patient.token}</strong>
-                    <span>{patient.name}</span>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+          {
+            queue && (
+              <div className="serving-summary">
+                <h3>Now serving</h3>
+                {
+                  queue.nowServing.length === 0 ? (
+                    <p className="muted">No doctor is currently seeing a patient.</p>
+                  ) : (
+                    queue.nowServing.map((patient) => (
+                      <div className="serving-row" key={patient.doctorId}>
+                        <span>{patient.doctorId}</span>
+                        <strong>{patient.token}</strong>
+                        <span>{patient.name}</span>
+                      </div>
+                    ))
+                  )}
+              </div>
+            )}
         </div>
       </div>
     </section>

@@ -1,4 +1,3 @@
-
 const MIN = 60_000;
 const KATHMANDU_OFFSET_MINUTES = 345;
 

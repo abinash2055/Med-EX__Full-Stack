@@ -1,4 +1,3 @@
-
 export interface LabTest {
     id: string;
     code: string;

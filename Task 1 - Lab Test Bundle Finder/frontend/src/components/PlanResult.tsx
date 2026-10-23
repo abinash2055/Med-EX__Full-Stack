@@ -20,7 +20,10 @@ export default function PlanResult({
     selectedCount,
 }: PlanResultProps) {
     const testNames = new Map(
-        tests.map((test) => [test.id, test.name]),
+        tests.map((test) => [
+            test.id,
+            test.name
+        ]),
     );
 
     return (
@@ -43,48 +46,54 @@ export default function PlanResult({
             ) : plan ? (
                 <>
                     <div className="plan-items">
-                        {plan.items.map((item) => (
-                            <article className="plan-item" key={`${item.type}-${item.id}`}>
-                                <div className="plan-item-heading">
-                                    <div>
-                                        <span className="item-type">
-                                            {item.type === "package"
-                                                ? "PACKAGE"
-                                                : "INDIVIDUAL TEST"}
-                                        </span>
-                                        <h3>{item.name}</h3>
-                                        <span className="muted">ID: {item.id}</span>
+                        {
+                            plan.items.map((item) => (
+                                <article className="plan-item" key={`${item.type}-${item.id}`}>
+                                    <div className="plan-item-heading">
+                                        <div>
+                                            <span className="item-type">
+                                                {
+                                                    item.type === "package"
+                                                        ? "PACKAGE"
+                                                        : "INDIVIDUAL TEST"
+                                                }
+                                            </span>
+                                            <h3>{item.name}</h3>
+                                            <span className="muted">ID: {item.id}</span>
+                                        </div>
+
+                                        <strong className="item-price">
+                                            {formatPrice(item.price)}
+                                        </strong>
                                     </div>
 
-                                    <strong className="item-price">
-                                        {formatPrice(item.price)}
-                                    </strong>
-                                </div>
-
-                                <div className="coverage">
-                                    <strong>Selected tests covered</strong>
-                                    <ul>
-                                        {item.covers.map((id) => (
-                                            <li key={id}>
-                                                {testNames.get(id) ?? id}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </article>
-                        ))}
+                                    <div className="coverage">
+                                        <strong>Selected tests covered</strong>
+                                        <ul>
+                                            {
+                                                item.covers.map((id) => (
+                                                    <li key={id}>
+                                                        {testNames.get(id) ?? id}
+                                                    </li>
+                                                ))}
+                                        </ul>
+                                    </div>
+                                </article>
+                            ))}
                     </div>
 
-                    {plan.extraTests.length > 0 && (
-                        <div className="bonus-box">
-                            <strong>Bonus tests included</strong>
-                            <ul>
-                                {plan.extraTests.map((id) => (
-                                    <li key={id}>{testNames.get(id) ?? id}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
+                    {
+                        plan.extraTests.length > 0 && (
+                            <div className="bonus-box">
+                                <strong>Bonus tests included</strong>
+                                <ul>
+                                    {
+                                        plan.extraTests.map((id) => (
+                                            <li key={id}>{testNames.get(id) ?? id}</li>
+                                        ))}
+                                </ul>
+                            </div>
+                        )}
 
                     <div className="price-summary">
                         <div className="summary-row">
@@ -94,19 +103,21 @@ export default function PlanResult({
                             </strong>
                         </div>
 
-                        {plan.individualTotal !== null && (
-                            <div className="summary-row">
-                                <span>Buying tests individually</span>
-                                <span>{formatPrice(plan.individualTotal)}</span>
-                            </div>
-                        )}
+                        {
+                            plan.individualTotal !== null && (
+                                <div className="summary-row">
+                                    <span>Buying tests individually</span>
+                                    <span>{formatPrice(plan.individualTotal)}</span>
+                                </div>
+                            )}
 
-                        {plan.savings !== null && plan.savings > 0 && (
-                            <div className="savings-row">
-                                <span>You save</span>
-                                <strong>{formatPrice(plan.savings)}</strong>
-                            </div>
-                        )}
+                        {
+                            plan.savings !== null && plan.savings > 0 && (
+                                <div className="savings-row">
+                                    <span>You save</span>
+                                    <strong>{formatPrice(plan.savings)}</strong>
+                                </div>
+                            )}
                     </div>
                 </>
             ) : (

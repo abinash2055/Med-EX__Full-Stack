@@ -1,7 +1,13 @@
-
-import { useCallback, useEffect, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useState
+} from 'react';
 import { api } from '../api';
-import type { Doctor as DoctorType, QueueResponse } from '../types';
+import type {
+  Doctor as DoctorType,
+  QueueResponse
+} from '../types';
 
 export default function Doctor() {
   const [doctors, setDoctors] = useState<DoctorType[]>([]);
@@ -98,8 +104,13 @@ export default function Doctor() {
         <span className="live-indicator">● Live queue</span>
       </div>
 
-      {error && <div className="alert alert-error" role="alert">{error}</div>}
-      {notice && <div className="alert alert-success" role="status">{notice}</div>}
+      {
+        error && <div className="alert alert-error" role="alert">
+          {error}
+        </div>}
+      {
+        notice && <div className="alert alert-success" role="status">{notice}
+        </div>}
 
       <div className="panel doctor-controls">
         <label htmlFor="doctor-select">Choose doctor</label>
@@ -112,11 +123,12 @@ export default function Doctor() {
             setError('');
           }}
         >
-          {doctors.map((doctor) => (
-            <option key={doctor.id} value={doctor.id}>
-              {doctor.name} ({doctor.id})
-            </option>
-          ))}
+          {
+            doctors.map((doctor) => (
+              <option key={doctor.id} value={doctor.id}>
+                {doctor.name} ({doctor.id})
+              </option>
+            ))}
         </select>
       </div>
 
@@ -146,7 +158,9 @@ export default function Doctor() {
             onClick={() => void performAction('call')}
             disabled={actionLoading || !!currentPatient}
           >
-            {actionLoading && !currentPatient ? 'Processing…' : 'Call next'}
+            {
+              actionLoading && !currentPatient ? 'Processing…' : 'Call next'
+            }
           </button>
 
           <button
@@ -166,11 +180,12 @@ export default function Doctor() {
           </button>
         </div>
 
-        {currentPatient && (
-          <p className="field-hint">
-            Mark this visit Done or No-show before calling another patient.
-          </p>
-        )}
+        {
+          currentPatient && (
+            <p className="field-hint">
+              Mark this visit Done or No-show before calling another patient.
+            </p>
+          )}
       </div>
 
       <div className="panel">
@@ -179,36 +194,39 @@ export default function Doctor() {
           <span className="count-badge">{queue?.waiting.length ?? 0} waiting</span>
         </div>
 
-        {!queue || queue.waiting.length === 0 ? (
-          <p className="state-message">No patients are waiting.</p>
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Position</th>
-                  <th>Token</th>
-                  <th>Name</th>
-                  <th>Estimated wait</th>
-                </tr>
-              </thead>
-              <tbody>
-                {queue.waiting.map((patient) => (
-                  <tr key={patient.token}>
-                    <td>{patient.position + 1}</td>
-                    <td><span className="token">{patient.token}</span></td>
-                    <td>{patient.name}</td>
-                    <td>
-                      {patient.estimatedWaitMinutes === 0
-                        ? 'Next'
-                        : `~${patient.estimatedWaitMinutes} min`}
-                    </td>
+        {
+          !queue || queue.waiting.length === 0 ? (
+            <p className="state-message">No patients are waiting.</p>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Position</th>
+                    <th>Token</th>
+                    <th>Name</th>
+                    <th>Estimated wait</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {
+                    queue.waiting.map((patient) => (
+                      <tr key={patient.token}>
+                        <td>{patient.position + 1}</td>
+                        <td><span className="token">{patient.token}</span></td>
+                        <td>{patient.name}</td>
+                        <td>
+                          {
+                            patient.estimatedWaitMinutes === 0
+                              ? 'Next'
+                              : `~${patient.estimatedWaitMinutes} min`}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
       </div>
     </section>
   );

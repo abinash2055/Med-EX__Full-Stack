@@ -1,8 +1,15 @@
 
-import { describe, it, expect } from 'vitest';
+import {
+  describe,
+  it,
+  expect
+} from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { Engine, Doctor } from '../src/engine';
+import {
+  Engine,
+  Doctor
+} from '../src/engine';
 
 const dataPath = path.join(__dirname, '../data/clinic.json');
 
@@ -11,7 +18,14 @@ const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 const doctorData =
   data.doctors ??
   data.clinic?.doctors ??
-  [{ id: 'D1' }, { id: 'D2' }];
+  [
+    {
+      id: 'D1'
+    },
+    {
+      id: 'D2'
+    }
+  ];
 
 const doctors: Doctor[] = doctorData.map((doctor: any) => ({
   id: doctor.id,
@@ -92,7 +106,12 @@ function replay(events: any[]) {
     }
   }
 
-  return { tokens, tokenList, calls, queues };
+  return {
+    tokens,
+    tokenList,
+    calls,
+    queues
+  };
 }
 
 describe('Examples from clinic.json', () => {
@@ -149,8 +168,14 @@ describe('Examples from clinic.json', () => {
 describe('Engine edge cases', () => {
   const createEngine = () =>
     new Engine([
-      { id: 'D1', name: 'Doctor A' },
-      { id: 'D2', name: 'Doctor B' },
+      {
+        id: 'D1',
+        name: 'Doctor A'
+      },
+      {
+        id: 'D2',
+        name: 'Doctor B'
+      },
     ]);
 
   const base = timestamp('2026-11-02T09:00:00+05:45');
@@ -193,12 +218,20 @@ describe('Engine edge cases', () => {
     const engine = createEngine();
 
     const first = engine.checkIn(
-      { name: 'First', age: 25, kind: 'walk_in' },
+      {
+        name: 'First',
+        age: 25,
+        kind: 'walk_in'
+      },
       timestamp('2026-11-02T23:59:00+05:45')
     );
 
     const second = engine.checkIn(
-      { name: 'Second', age: 25, kind: 'walk_in' },
+      {
+        name: 'Second',
+        age: 25,
+        kind: 'walk_in'
+      },
       timestamp('2026-11-03T00:01:00+05:45')
     );
 
@@ -222,7 +255,11 @@ describe('Engine edge cases', () => {
     }
 
     engine.checkIn(
-      { name: 'Walk-in patient', age: 30, kind: 'walk_in' },
+      {
+        name: 'Walk-in patient',
+        age: 30,
+        kind: 'walk_in'
+      },
       base
     );
 
@@ -295,12 +332,20 @@ describe('Engine edge cases', () => {
     const engine = createEngine();
 
     engine.checkIn(
-      { name: 'Patient One', age: 30, kind: 'walk_in' },
+      {
+        name: 'Patient One',
+        age: 30,
+        kind: 'walk_in'
+      },
       base
     );
 
     engine.checkIn(
-      { name: 'Patient Two', age: 30, kind: 'walk_in' },
+      {
+        name: 'Patient Two',
+        age: 30,
+        kind: 'walk_in'
+      },
       base + 1
     );
 
@@ -318,12 +363,20 @@ describe('Engine edge cases', () => {
     const engine = createEngine();
 
     engine.checkIn(
-      { name: 'Young patient', age: 20, kind: 'walk_in' },
+      {
+        name: 'Young patient',
+        age: 20,
+        kind: 'walk_in'
+      },
       base
     );
 
     engine.checkIn(
-      { name: 'Older patient', age: 70, kind: 'walk_in' },
+      {
+        name: 'Older patient',
+        age: 70,
+        kind: 'walk_in'
+      },
       base + 1_000
     );
 

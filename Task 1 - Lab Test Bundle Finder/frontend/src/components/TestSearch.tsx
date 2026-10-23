@@ -1,4 +1,7 @@
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useState
+} from "react";
 import type { LabTest } from "../types";
 
 interface TestSearchProps {
@@ -47,34 +50,36 @@ export default function TestSearch({
       />
 
       <div className="test-list">
-        {filteredTests.map((test) => (
-          <div className="test-option" key={test.id}>
-            <div className="test-details">
-              <strong>{test.name}</strong>
-              <span className="muted">
-                {test.code} ·{" "}
-                {test.price === null
-                  ? "Package only"
-                  : `฿${test.price.toLocaleString("en-US")}`}
-              </span>
+        {
+          filteredTests.map((test) => (
+            <div className="test-option" key={test.id}>
+              <div className="test-details">
+                <strong>{test.name}</strong>
+                <span className="muted">
+                  {test.code} ·{" "}
+                  {test.price === null
+                    ? "Package only"
+                    : `฿${test.price.toLocaleString("en-US")}`}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className="button button-secondary"
+                onClick={() => onAdd(test.id)}
+                aria-label={`Add ${test.name}`}
+              >
+                Add
+              </button>
             </div>
+          ))}
 
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={() => onAdd(test.id)}
-              aria-label={`Add ${test.name}`}
-            >
-              Add
-            </button>
-          </div>
-        ))}
-
-        {filteredTests.length === 0 && (
-          <p className="empty-message">
-            No matching tests found.
-          </p>
-        )}
+        {
+          filteredTests.length === 0 && (
+            <p className="empty-message">
+              No matching tests found.
+            </p>
+          )}
       </div>
     </section>
   );
