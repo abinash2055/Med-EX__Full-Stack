@@ -1,12 +1,17 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "private": true,
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "concurrently -n API,TEST \"npm:dev:server\" \"npm:dev:test-watch\"",
+    "dev:server": "tsx watch src/server.ts",
+    "dev:test-watch": "vitest",
     "test": "vitest run",
-    "dev": "tsx watch src/server.ts",
-    "start": "tsx src/server.ts"
+    "start": "tsx src/server.ts",
+    "build": "tsc",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +25,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
+    "concurrently": "^10.0.6",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"

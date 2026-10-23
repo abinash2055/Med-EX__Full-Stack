@@ -1,42 +1,91 @@
-import fs from 'fs';
-import path from 'path';
-import {
-    Engine,
-    Doctor,
-    State
-} from './engine';
+
+import fs from 'node:fs';
+import path from 'node:path';
+
+import { Engine, Doctor, State } from './engine';
 import { createApp } from './app';
 
 const dataDir = path.join(__dirname, '..', 'data');
+const clinicFile = path.join(dataDir, 'clinic.json');
 const stateFile = path.join(dataDir, 'state.json');
 
-// Doctors come from clinic.json if possible, otherwise fall back to D1 and D2.
-let doctors: Doctor[] = [{
-    id: 'D1',
-    name: 'Doctor 1'
-}, {
-    id: 'D2',
-    name: 'Doctor 2'
+// Clinic configuration must be supplied manually.
+// Never generate clinic.json or silently substitute default doctors.
+if (!fs.existsSync(clinicFile)) {
+  throw new Error(
+    `Missing ${clinicFile}. Create data/clinic.json manually before starting the server.`
+  );
 }
-];
 
-try {
-    const clinic = JSON.parse(fs.readFileSync(path.join(dataDir, 'clinic.json'), 'utf8'));
-    const list = clinic.doctors ?? clinic.clinic?.doctors;
-    if (Array.isArray(list) && list.length)
-        doctors = list.map((d: any) => ({ 
-    id: d.id, 
-    name: d.name ?? d.id 
+const clinicData = JSON.parse(
+  fs.readFileSync(clinicFile, 'utf8')
+);
+
+const doctorList =
+  clinicData.doctors ?? clinicData.clinic?.doctors;
+
+if (
+  !Array.isArray(doctorList) ||
+  doctorList.length === 0 ||
+  doctorList.some(
+    (doctor: any) =>
+      typeof doctor.id !== 'string' ||
+      !doctor.id.trim()
+  )
+) {
+  throw new Error(
+    'clinic.json must contain a non-empty doctors array with valid doctor IDs.'
+  );
+}
+
+const doctorIds = doctorList.map((doctor: any) => doctor.id);
+
+if (new Set(doctorIds).size !== doctorIds.length) {
+  throw new Error('Doctor IDs in clinic.json must be unique.');
+}
+
+const doctors: Doctor[] = doctorList.map((doctor: any) => ({
+  id: doctor.id,
+  name:
+    typeof doctor.name === 'string' && doctor.name.trim()
+      ? doctor.name.trim()
+      : doctor.id
 }));
-} catch {
-    console.warn('clinic.json not found, using default doctors');
+
+// Restore saved queue state if available.
+let savedState: State | undefined;
+
+if (fs.existsSync(stateFile)) {
+  savedState = JSON.parse(
+    fs.readFileSync(stateFile, 'utf8')
+  );
 }
 
-let saved: State | undefined;
-if (fs.existsSync(stateFile)) saved = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+// Initialize the engine in memory; this does not write data files.
+const engine = new Engine(doctors, savedState);
 
-const engine = new Engine(doctors, saved);
-const persist = () => fs.writeFileSync(stateFile, JSON.stringify(engine.state, null, 2));
+// Persist state only after a successful API operation.
+// The first successful mutation creates state.json.
+const persist = () => {
+  const temporaryFile = `${stateFile}.tmp`;
+
+  fs.writeFileSync(
+    temporaryFile,
+    JSON.stringify(engine.state, null, 2),
+    'utf8'
+  );
+
+  fs.renameSync(temporaryFile, stateFile);
+};
 
 const port = Number(process.env.PORT ?? 3000);
-createApp(engine, persist).listen(port, () => console.log(`API on http://localhost:${port}`));
+
+if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  throw new Error('PORT must be a valid port number.');
+}
+
+const app = createApp(engine, persist);
+
+app.listen(port, () => {
+  console.log(`Clinic Queue API running at http://localhost:${port}`);
+});

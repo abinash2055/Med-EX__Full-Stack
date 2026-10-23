@@ -1,285 +1,348 @@
 
 import { describe, it, expect } from 'vitest';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { Engine, Doctor } from '../src/engine';
 
-const data = JSON.parse(
-    fs.readFileSync(path.join(__dirname, '../data/clinic.json'), 'utf8')
-);
+const dataPath = path.join(__dirname, '../data/clinic.json');
 
-const doctors: Doctor[] = (
-    data.doctors ??
-    data.clinic?.doctors ??
-    [{ id: 'D1' }, { id: 'D2' }]
-).map((d: any) => ({
-    id: d.id,
-    name: d.name ?? d.id
+const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+
+const doctorData =
+  data.doctors ??
+  data.clinic?.doctors ??
+  [{ id: 'D1' }, { id: 'D2' }];
+
+const doctors: Doctor[] = doctorData.map((doctor: any) => ({
+  id: doctor.id,
+  name: doctor.name ?? doctor.id,
 }));
 
-const T = (s: string) => Date.parse(s);
-const norm = (s: string) => s.replace(/-/g, '_').toLowerCase();
+const timestamp = (value: string): number => {
+  const result = Date.parse(value);
 
-function formatTime(timestamp: string): string {
-    return new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Asia/Kathmandu',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-    }).format(new Date(timestamp));
+  if (Number.isNaN(result)) {
+    throw new Error(`Invalid test timestamp: ${value}`);
+  }
+
+  return result;
+};
+
+const normalizeEventType = (value: string): string =>
+  value.replace(/-/g, '_').toLowerCase();
+
+function formatTime(value: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kathmandu',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(value));
 }
 
 function replay(events: any[]) {
-    const engine = new Engine(doctors);
-    const tokens: Record<string, string> = {};
-    const tokenList: string[] = [];
-    const calls: any[] = [];
-    const queues: any[] = [];
+  const engine = new Engine(doctors);
 
-    for (const ev of events) {
-        const now = T(ev.at);
+  const tokens: Record<string, string> = {};
+  const tokenList: string[] = [];
+  const calls: any[] = [];
+  const queues: any[] = [];
 
-        switch (norm(ev.type)) {
-            case 'check_in': {
-                const p = engine.checkIn(ev.patient, now);
-                tokens[p.name] = p.token;
-                tokenList.push(p.token);
-                break;
-            }
+  for (const event of events) {
+    const now = timestamp(event.at);
 
-            case 'call_next': {
-                const p = engine.callNext(ev.doctorId, now);
+    switch (normalizeEventType(event.type)) {
+      case 'check_in': {
+        const patient = engine.checkIn(event.patient, now);
 
-                calls.push({
-                    at: formatTime(ev.at),
-                    doctorId: ev.doctorId,
-                    token: p ? p.token : null,
-                    name: p ? p.name : null
-                });
-                break;
-            }
+        tokens[patient.name] = patient.token;
+        tokenList.push(patient.token);
+        break;
+      }
 
-            case 'done':
-                engine.done(ev.doctorId);
-                break;
+      case 'call_next': {
+        const patient = engine.callNext(event.doctorId, now);
 
-            case 'no_show':
-                engine.noShow(ev.doctorId, now);
-                break;
+        calls.push({
+          at: formatTime(event.at),
+          doctorId: event.doctorId,
+          token: patient?.token ?? null,
+          name: patient?.name ?? null,
+        });
+        break;
+      }
 
-            case 'queue':
-                queues.push(engine.queue(now).waiting);
-                break;
+      case 'done': {
+        engine.done(event.doctorId);
+        break;
+      }
 
-            default:
-                throw new Error(`Unknown event type ${ev.type}`);
-        }
+      case 'no_show': {
+        engine.noShow(event.doctorId, now);
+        break;
+      }
+
+      case 'queue': {
+        queues.push(engine.queue(now).waiting);
+        break;
+      }
+
+      default:
+        throw new Error(`Unknown event type: ${event.type}`);
     }
+  }
 
-    return { tokens, tokenList, calls, queues };
+  return { tokens, tokenList, calls, queues };
 }
 
-describe('examples from clinic.json', () => {
-    const examples: any[] = data.examples ?? [];
+describe('Examples from clinic.json', () => {
+  const examples: any[] = data.examples ?? [];
 
-    it('has examples', () => {
-        expect(examples.length).toBeGreaterThan(0);
-    });
+  it('contains at least one example', () => {
+    expect(examples.length).toBeGreaterThan(0);
+  });
 
-    examples.forEach((ex, i) => {
-        it(`replays example ${ex.name ?? ex.id ?? i}`, () => {
-            const actual = replay(ex.events);
-            const exp = ex.expected;
+  examples.forEach((example, index) => {
+    it(`replays example: ${example.name ?? example.id ?? index}`, () => {
+      const actual = replay(example.events);
+      const expected = example.expected;
 
-            const expTokens = exp.tokens;
-            const expCalls = exp.calls;
-            const expQueues =
-                exp.queues ?? exp.waiting ?? exp.queueSnapshots;
+      const expectedTokens = expected.tokens;
+      const expectedCalls = expected.calls;
 
-            if (expTokens !== undefined) {
-                if (Array.isArray(expTokens)) {
-                    expect(actual.tokenList).toEqual(
-                        expTokens.map((x: any) =>
-                            typeof x === 'string' ? x : x.token
-                        )
-                    );
-                } else {
-                    expect(actual.tokens).toMatchObject(expTokens);
-                }
-            }
+      const expectedQueues =
+        expected.queues ??
+        expected.waiting ??
+        expected.queueSnapshots;
 
-            if (expCalls !== undefined) {
-                expect(actual.calls).toMatchObject(expCalls);
-            }
+      if (expectedTokens !== undefined) {
+        if (Array.isArray(expectedTokens)) {
+          expect(actual.tokenList).toEqual(
+            expectedTokens.map((item: any) =>
+              typeof item === 'string' ? item : item.token
+            )
+          );
+        } else {
+          expect(actual.tokens).toMatchObject(expectedTokens);
+        }
+      }
 
-            if (expQueues !== undefined) {
-                const q = expQueues.map((x: any) =>
-                    Array.isArray(x) ? x : x.waiting ?? x.queue
-                );
+      if (expectedCalls !== undefined) {
+        expect(actual.calls).toMatchObject(expectedCalls);
+      }
 
-                expect(actual.queues).toMatchObject(q);
-            }
+      if (expectedQueues !== undefined) {
+        const normalizedQueues = expectedQueues.map((item: any) => {
+          if (Array.isArray(item)) {
+            return item;
+          }
+
+          return item.waiting ?? item.queue;
         });
+
+        expect(actual.queues).toMatchObject(normalizedQueues);
+      }
     });
+  });
 });
 
-describe('edge cases', () => {
-    const mk = () =>
-        new Engine([
-            { id: 'D1', name: 'A' },
-            { id: 'D2', name: 'B' }
-        ]);
+describe('Engine edge cases', () => {
+  const createEngine = () =>
+    new Engine([
+      { id: 'D1', name: 'Doctor A' },
+      { id: 'D2', name: 'Doctor B' },
+    ]);
 
-    const base = T('2026-11-02T09:00:00+05:45');
+  const base = timestamp('2026-11-02T09:00:00+05:45');
 
-    it('exactly 15 min late is on time, 16 is a walk-in', () => {
-        const e = mk();
-        const appt = '2026-11-02T09:00:00+05:45';
+  it('accepts an appointment exactly 15 minutes late', () => {
+    const engine = createEngine();
 
-        expect(
-            e.checkIn(
-                {
-                    name: 'a',
-                    age: 30,
-                    kind: 'appointment',
-                    appointmentTime: appt
-                },
-                base + 15 * 60000
-            ).token
-        ).toBe('A-001');
+    const patient = engine.checkIn(
+      {
+        name: 'On-time patient',
+        age: 30,
+        kind: 'appointment',
+        appointmentTime: '2026-11-02T09:00:00+05:45',
+      },
+      base + 15 * 60_000
+    );
 
-        expect(
-            e.checkIn(
-                {
-                    name: 'b',
-                    age: 30,
-                    kind: 'appointment',
-                    appointmentTime: appt
-                },
-                base + 16 * 60000
-            ).token
-        ).toBe('W-001');
-    });
+    expect(patient.token).toBe('A-001');
+    expect(patient.kind).toBe('appointment');
+  });
 
-    it('counters reset at Kathmandu midnight', () => {
-        const e = mk();
+  it('converts an appointment 16 minutes late into a walk-in', () => {
+    const engine = createEngine();
 
-        expect(
-            e.checkIn(
-                { name: 'a', age: 1, kind: 'walk_in' },
-                T('2026-11-02T23:59:00+05:45')
-            ).token
-        ).toBe('W-001');
+    const patient = engine.checkIn(
+      {
+        name: 'Late patient',
+        age: 30,
+        kind: 'appointment',
+        appointmentTime: '2026-11-02T09:00:00+05:45',
+      },
+      base + 16 * 60_000
+    );
 
-        expect(
-            e.checkIn(
-                { name: 'b', age: 1, kind: 'walk_in' },
-                T('2026-11-03T00:01:00+05:45')
-            ).token
-        ).toBe('W-001');
-    });
+    expect(patient.token).toBe('W-001');
+    expect(patient.kind).toBe('walk_in');
+  });
 
-    it('fairness: walk-in is called after 3 due appointments', () => {
-        const e = mk();
-        const appt = '2026-11-02T09:05:00+05:45';
+  it('resets daily token counters at Kathmandu midnight', () => {
+    const engine = createEngine();
 
-        for (let i = 0; i < 5; i++) {
-            e.checkIn(
-                {
-                    name: `a${i}`,
-                    age: 30,
-                    kind: 'appointment',
-                    appointmentTime: appt
-                },
-                base
-            );
-        }
+    const first = engine.checkIn(
+      { name: 'First', age: 25, kind: 'walk_in' },
+      timestamp('2026-11-02T23:59:00+05:45')
+    );
 
-        e.checkIn(
-            { name: 'walker', age: 30, kind: 'walk_in' },
-            base
-        );
+    const second = engine.checkIn(
+      { name: 'Second', age: 25, kind: 'walk_in' },
+      timestamp('2026-11-03T00:01:00+05:45')
+    );
 
-        const names: string[] = [];
+    expect(first.token).toBe('W-001');
+    expect(second.token).toBe('W-001');
+  });
 
-        for (let i = 0; i < 4; i++) {
-            const doc = i % 2 ? 'D2' : 'D1';
-            names.push(e.callNext(doc, base)!.name);
-            e.done(doc);
-        }
+  it('serves a walk-in after three consecutive due-appointment calls', () => {
+    const engine = createEngine();
 
-        expect(names).toEqual(['a0', 'a1', 'a2', 'walker']);
-    });
+    for (let index = 0; index < 5; index++) {
+      engine.checkIn(
+        {
+          name: `Appointment ${index}`,
+          age: 30,
+          kind: 'appointment',
+          appointmentTime: '2026-11-02T09:05:00+05:45',
+        },
+        base
+      );
+    }
 
-    it('no-show: first goes back as walk-in with same token, second leaves', () => {
-        const e = mk();
+    engine.checkIn(
+      { name: 'Walk-in patient', age: 30, kind: 'walk_in' },
+      base
+    );
 
-        const p = e.checkIn(
-            {
-                name: 'x',
-                age: 30,
-                kind: 'appointment',
-                appointmentTime: '2026-11-02T09:00:00+05:45'
-            },
-            base
-        );
+    const calledNames: string[] = [];
 
-        e.callNext('D1', base);
-        e.noShow('D1', base + 60000);
+    for (let index = 0; index < 4; index++) {
+      const doctorId = index % 2 === 0 ? 'D1' : 'D2';
+      const patient = engine.callNext(doctorId, base);
 
-        expect(e.queue(base + 60000).waiting[0].token).toBe(p.token);
+      expect(patient).not.toBeNull();
+      calledNames.push(patient!.name);
 
-        e.callNext('D1', base + 120000);
-        e.noShow('D1', base + 180000);
+      engine.done(doctorId);
+    }
 
-        expect(e.queue(base + 180000).waiting).toHaveLength(0);
-    });
+    expect(calledNames).toEqual([
+      'Appointment 0',
+      'Appointment 1',
+      'Appointment 2',
+      'Walk-in patient',
+    ]);
+  });
 
-    it('409 when calling next while busy; never same patient twice', () => {
-        const e = mk();
+  it('returns a first no-show to the queue with the same token', () => {
+    const engine = createEngine();
 
-        e.checkIn(
-            { name: 'x', age: 30, kind: 'walk_in' },
-            base
-        );
+    const original = engine.checkIn(
+      {
+        name: 'No-show patient',
+        age: 30,
+        kind: 'appointment',
+        appointmentTime: '2026-11-02T09:00:00+05:45',
+      },
+      base
+    );
 
-        e.checkIn(
-            { name: 'y', age: 30, kind: 'walk_in' },
-            base + 1
-        );
+    engine.callNext('D1', base);
+    engine.noShow('D1', base + 60_000);
 
-        const a = e.callNext('D1', base + 2)!;
-        const b = e.callNext('D2', base + 2)!;
+    const waiting = engine.queue(base + 60_000).waiting;
 
-        expect(a.token).not.toBe(b.token);
-        expect(() => e.callNext('D1', base + 3)).toThrow(/already/);
-    });
+    expect(waiting).toHaveLength(1);
+    expect(waiting[0].token).toBe(original.token);
+    expect(waiting[0].kind).toBe('walk_in');
+  });
 
-    it('65+ walk-ins and emergencies go first', () => {
-        const e = mk();
+  it('removes a patient after the second no-show', () => {
+    const engine = createEngine();
 
-        e.checkIn(
-            { name: 'young', age: 20, kind: 'walk_in' },
-            base
-        );
+    engine.checkIn(
+      {
+        name: 'Repeated no-show',
+        age: 30,
+        kind: 'appointment',
+        appointmentTime: '2026-11-02T09:00:00+05:45',
+      },
+      base
+    );
 
-        e.checkIn(
-            { name: 'old', age: 70, kind: 'walk_in' },
-            base + 1000
-        );
+    engine.callNext('D1', base);
+    engine.noShow('D1', base + 60_000);
 
-        e.checkIn(
-            {
-                name: 'emerg',
-                age: 40,
-                kind: 'walk_in',
-                emergency: true
-            },
-            base + 2000
-        );
+    engine.callNext('D1', base + 120_000);
+    engine.noShow('D1', base + 180_000);
 
-        expect(
-            e.queue(base + 3000).waiting.map(w => w.name)
-        ).toEqual(['emerg', 'old', 'young']);
-    });
+    expect(engine.queue(base + 180_000).waiting).toHaveLength(0);
+  });
+
+  it('rejects a second call-next for a busy doctor', () => {
+    const engine = createEngine();
+
+    engine.checkIn(
+      { name: 'Patient One', age: 30, kind: 'walk_in' },
+      base
+    );
+
+    engine.checkIn(
+      { name: 'Patient Two', age: 30, kind: 'walk_in' },
+      base + 1
+    );
+
+    const first = engine.callNext('D1', base + 2);
+    const second = engine.callNext('D2', base + 2);
+
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(first!.token).not.toBe(second!.token);
+
+    expect(() => engine.callNext('D1', base + 3)).toThrow(/already/i);
+  });
+
+  it('prioritizes emergencies, then walk-ins aged 65 or older', () => {
+    const engine = createEngine();
+
+    engine.checkIn(
+      { name: 'Young patient', age: 20, kind: 'walk_in' },
+      base
+    );
+
+    engine.checkIn(
+      { name: 'Older patient', age: 70, kind: 'walk_in' },
+      base + 1_000
+    );
+
+    engine.checkIn(
+      {
+        name: 'Emergency patient',
+        age: 40,
+        kind: 'walk_in',
+        emergency: true,
+      },
+      base + 2_000
+    );
+
+    expect(
+      engine.queue(base + 3_000).waiting.map((patient) => patient.name)
+    ).toEqual([
+      'Emergency patient',
+      'Older patient',
+      'Young patient',
+    ]);
+  });
 });
