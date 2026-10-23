@@ -162,7 +162,24 @@ npm install
 npm run dev
 ```
 
-For Task 2 or Task 3, navigate to the corresponding task's `frontend` directory and execute `npm install` followed by `npm run dev`.
+Install the dependencies and run the task you want to use. For example, to run Task 2:
+
+```bash
+cd Task2-Clinic-Queue-System/frontend
+npm install
+npm run dev
+```
+
+
+Install the dependencies and run the task you want to use. For example, to run Task 3:
+
+```bash
+cd Task3-Coupon-Checkout-Calculator/frontend
+npm install
+npm run dev
+```
+
+navigate to the corresponding task's `frontend` directory and execute `npm install` followed by `npm run dev`.
 
 **Note:** Replace `MedEx` and the task folder names with the actual directory names in your repository if they differ.
 
